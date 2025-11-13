@@ -35,15 +35,10 @@ def format_currency(x: float) -> str:
 @st.cache_data
 def load_data(uploaded_file):
     """
-    Read Excel from uploader (or local file as fallback).
-
-    If no file is uploaded (e.g. on teacher's computer),
-    it tries to load `B2B_Transaction_Data.xlsx` from the same folder.
+    Read Excel from uploader.
+    NOTE: No local fallback here; app waits until a file is uploaded.
     """
-    if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-    else:
-        df = pd.read_excel("B2B_Transaction_Data.xlsx")
+    df = pd.read_excel(uploaded_file)
     return df
 
 # -----------------------------
@@ -58,10 +53,12 @@ uploaded_file = st.sidebar.file_uploader(
 
 if uploaded_file is None:
     st.sidebar.info(
-        "You can upload the homework dataset here.\n\n"
-        "If you are running this locally and the file is in the same folder "
-        "as this script, the app will try to load it automatically."
+        "Please upload the homework dataset here.\n\n"
+        "The dashboard will start automatically after you select an Excel file."
     )
+    # Main area info
+    st.info("👆 Start by uploading **B2B_Transaction_Data.xlsx** from the sidebar.")
+    st.stop()   # Uygulamanın geri kalanını ÇALIŞTIRMA, dosya gelene kadar bekle
 
 with st.sidebar.expander("ℹ About this dashboard", expanded=False):
     st.write(
@@ -73,12 +70,10 @@ with st.sidebar.expander("ℹ About this dashboard", expanded=False):
         """
     )
 
-# Try loading data (if file is really missing everywhere, fail gracefully)
-try:
-    df = load_data(uploaded_file)
-except Exception:
-    st.error("❌ Data could not be loaded. Please upload the Excel file or place it next to this script.")
-    st.stop()
+# -----------------------------
+# DATA LOADING (Artık try/except yok)
+# -----------------------------
+df = load_data(uploaded_file)
 
 # -----------------------------
 # DATA PREPROCESSING
