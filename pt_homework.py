@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+#Berra alakoc, abdussamet akdogan, enes minareci, elif deren özen, zeynep kızmaz,
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
