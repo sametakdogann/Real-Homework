@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 # -----------------------------
 # PAGE CONFIG
@@ -163,7 +163,7 @@ st.download_button(
 st.divider()
 
 # -----------------------------
-# TABS (SIMILAR STRUCTURE, MORE ORIGINAL CONTENT)
+# TABS
 # -----------------------------
 tab1, tab2, tab3, tab4 = st.tabs([
     "Overview & KPIs",
@@ -216,14 +216,14 @@ with tab1:
             .reset_index()
             .sort_values(metric_for_breakdown, ascending=False)
         )
-        fig_cat = px.bar(
-            revenue_by_cat,
-            x="Category",
-            y=metric_for_breakdown,
-            title=f"Total {metric_label} by Category",
-            text_auto=".2s"
-        )
-        st.plotly_chart(fig_cat, use_container_width=True)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.bar(revenue_by_cat["Category"], revenue_by_cat[metric_for_breakdown])
+        ax.set_title(f"Total {metric_label} by Category")
+        ax.set_xlabel("Category")
+        ax.set_ylabel(metric_label)
+        ax.tick_params(axis='x', rotation=45)
+        plt.tight_layout()
+        st.pyplot(fig)
 
     with c2:
         st.markdown(f"##### {metric_label} by City (Top 10)")
@@ -234,14 +234,14 @@ with tab1:
             .sort_values(metric_for_breakdown, ascending=False)
             .head(10)
         )
-        fig_city = px.bar(
-            revenue_by_city,
-            x="City",
-            y=metric_for_breakdown,
-            title=f"Top 10 Cities by {metric_label}",
-            text_auto=".2s"
-        )
-        st.plotly_chart(fig_city, use_container_width=True)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.bar(revenue_by_city["City"], revenue_by_city[metric_for_breakdown])
+        ax.set_title(f"Top 10 Cities by {metric_label}")
+        ax.set_xlabel("City")
+        ax.set_ylabel(metric_label)
+        ax.tick_params(axis='x', rotation=45)
+        plt.tight_layout()
+        st.pyplot(fig)
 
     st.markdown("#### Monthly Revenue Trend")
     revenue_over_time = (
@@ -250,14 +250,14 @@ with tab1:
         .reset_index()
         .sort_values("Month")
     )
-    fig_month = px.line(
-        revenue_over_time,
-        x="Month",
-        y="SalesRevenue",
-        markers=True,
-        title="Monthly Revenue Trend (Filtered Data)"
-    )
-    st.plotly_chart(fig_month, use_container_width=True)
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(revenue_over_time["Month"], revenue_over_time["SalesRevenue"], marker="o")
+    ax.set_title("Monthly Revenue Trend (Filtered Data)")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Revenue")
+    ax.tick_params(axis='x', rotation=45)
+    plt.tight_layout()
+    st.pyplot(fig)
 
     st.markdown("#### Top 15 Products by Revenue")
     top_products = (
@@ -267,15 +267,14 @@ with tab1:
         .sort_values("SalesRevenue", ascending=False)
         .head(15)
     )
-    fig_prod = px.bar(
-        top_products,
-        x="Description",
-        y="SalesRevenue",
-        title="Top 15 Products by Revenue",
-        text_auto=".2s"
-    )
-    fig_prod.update_layout(xaxis_tickangle=-45)
-    st.plotly_chart(fig_prod, use_container_width=True)
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(top_products["Description"], top_products["SalesRevenue"])
+    ax.set_title("Top 15 Products by Revenue")
+    ax.set_xlabel("Product")
+    ax.set_ylabel("Revenue")
+    ax.tick_params(axis='x', rotation=60)
+    plt.tight_layout()
+    st.pyplot(fig)
 
 # -----------------------------
 # TAB 2: DESCRIPTIVE STATISTICS
@@ -294,31 +293,45 @@ with tab2:
         index=numeric_cols.index("SalesRevenue") if "SalesRevenue" in numeric_cols else 0
     )
 
-    fig_hist = px.histogram(
-        df_filtered,
-        x=numeric_col,
-        nbins=40,
-        title=f"Distribution of {numeric_col}"
-    )
-    st.plotly_chart(fig_hist, use_container_width=True)
+    # Histogram
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.hist(df_filtered[numeric_col].dropna(), bins=40)
+    ax.set_title(f"Distribution of {numeric_col}")
+    ax.set_xlabel(numeric_col)
+    ax.set_ylabel("Frequency")
+    plt.tight_layout()
+    st.pyplot(fig)
 
     st.markdown("#### Box Plot for Outlier Detection")
-    fig_box = px.box(
-        df_filtered,
-        y=numeric_col,
-        title=f"Box Plot of {numeric_col}"
-    )
-    st.plotly_chart(fig_box, use_container_width=True)
+    fig, ax = plt.subplots(figsize=(4, 4))
+    ax.boxplot(df_filtered[numeric_col].dropna(), vert=True)
+    ax.set_title(f"Box Plot of {numeric_col}")
+    ax.set_ylabel(numeric_col)
+    plt.tight_layout()
+    st.pyplot(fig)
 
     st.markdown("#### Correlation Heatmap (Numeric Features)")
     corr = df_filtered[numeric_cols].corr()
-    fig_corr = px.imshow(
-        corr,
-        text_auto=True,
-        aspect="auto",
-        title="Correlation Matrix of Numeric Variables"
-    )
-    st.plotly_chart(fig_corr, use_container_width=True)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    im = ax.imshow(corr, cmap="Blues")
+    ax.set_xticks(np.arange(len(corr.columns)))
+    ax.set_yticks(np.arange(len(corr.columns)))
+    ax.set_xticklabels(corr.columns, rotation=45, ha="right")
+    ax.set_yticklabels(corr.columns)
+    ax.set_title("Correlation Matrix of Numeric Variables")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    # Annotate values
+    for i in range(len(corr.columns)):
+        for j in range(len(corr.columns)):
+            ax.text(
+                j, i, f"{corr.iloc[i, j]:.2f}",
+                ha="center", va="center", color="black", fontsize=8
+            )
+
+    plt.tight_layout()
+    st.pyplot(fig)
 
 # -----------------------------
 # TAB 3: ABC–XYZ ANALYSIS
@@ -336,7 +349,7 @@ with tab3:
         """
     )
 
-    # Optional: user-tunable thresholds (slightly more advanced than a fixed rule)
+    # Optional: user-tunable thresholds
     st.markdown("##### Thresholds (you can tune if you want)")
     col_t1, col_t2, col_t3 = st.columns(3)
     with col_t1:
@@ -345,8 +358,7 @@ with tab3:
         b_limit = col_t2.slider("B-class cutoff (cumulative %)", a_limit, 0.99, 0.95, 0.01)
     with col_t3:
         x_limit = col_t3.slider("X/Y CV boundary", 0.1, 1.0, 0.5, 0.05)
-    # Y/Z boundary fixed at 1.0 as in original example
-    y_limit = 1.0
+    y_limit = 1.0  # Y/Z boundary
 
     # 1) Month number from InvoiceDate
     df_abc = df_filtered.copy()
@@ -462,16 +474,16 @@ with tab3:
         class_counts = df_result["stock_class"].value_counts().reset_index()
         class_counts.columns = ["stock_class", "count"]
 
-        fig_classes = px.bar(
-            class_counts,
-            x="stock_class",
-            y="count",
-            title="Number of SKUs in Each ABC–XYZ Class",
-            text_auto=True
-        )
-        st.plotly_chart(fig_classes, use_container_width=True)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.bar(class_counts["stock_class"], class_counts["count"])
+        ax.set_title("Number of SKUs in Each ABC–XYZ Class")
+        ax.set_xlabel("Stock Class")
+        ax.set_ylabel("Count of SKUs")
+        ax.tick_params(axis='x', rotation=45)
+        plt.tight_layout()
+        st.pyplot(fig)
 
-        # ABC–XYZ matrix as heatmap (more visual)
+        # ABC–XYZ matrix as heatmap
         st.markdown("#### ABC–XYZ Matrix Heatmap")
         matrix = (
             df_result
@@ -480,13 +492,29 @@ with tab3:
             .reset_index(name="sku_count")
         )
         matrix_pivot = matrix.pivot(index="ABC_Class", columns="XYZ_Class", values="sku_count").fillna(0)
-        fig_matrix = px.imshow(
-            matrix_pivot,
-            text_auto=True,
-            aspect="auto",
-            title="ABC–XYZ Matrix (Number of SKUs)"
-        )
-        st.plotly_chart(fig_matrix, use_container_width=True)
+
+        fig, ax = plt.subplots(figsize=(5, 4))
+        im = ax.imshow(matrix_pivot.values, cmap="Oranges")
+
+        ax.set_xticks(np.arange(len(matrix_pivot.columns)))
+        ax.set_yticks(np.arange(len(matrix_pivot.index)))
+        ax.set_xticklabels(matrix_pivot.columns)
+        ax.set_yticklabels(matrix_pivot.index)
+        ax.set_xlabel("XYZ Class")
+        ax.set_ylabel("ABC Class")
+        ax.set_title("ABC–XYZ Matrix (Number of SKUs)")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+        # annotate cells
+        for i in range(len(matrix_pivot.index)):
+            for j in range(len(matrix_pivot.columns)):
+                ax.text(
+                    j, i, int(matrix_pivot.iloc[i, j]),
+                    ha="center", va="center", color="black", fontsize=9
+                )
+
+        plt.tight_layout()
+        st.pyplot(fig)
 
         st.markdown("#### Filter by Stock Class")
         selected_stock_class = st.selectbox(
